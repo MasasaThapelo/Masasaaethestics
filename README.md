@@ -129,3 +129,4 @@ See `.env.example` for required environment variables.
 ISC
 
 # Masasaaethestics
+# Masasaaethestics
