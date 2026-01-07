@@ -100,7 +100,7 @@ export default function ProductDetailPage() {
                 value={customization}
                 onChange={(e) => setCustomization(e.target.value)}
                 placeholder="Enter your initials or any special requests..."
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 focus:ring-2 focus:ring-gray-900 focus:border-transparent resize-none"
                 rows={4}
               />
             </div>
