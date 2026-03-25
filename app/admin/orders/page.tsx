@@ -3,13 +3,15 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Order } from '@/lib/types';
-import { Search, Filter, ArrowUpDown, Loader2, CheckCircle, Clock, Truck, XCircle, MoreVertical } from 'lucide-react';
+import { Search, Filter, ArrowUpDown, Loader2, CheckCircle, Clock, Truck, XCircle, MoreVertical, Eye } from 'lucide-react';
 
 export default function OrdersPage() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+    const [showItemsModal, setShowItemsModal] = useState(false);
 
     const fetchOrders = async () => {
         if (!supabase) return;
@@ -177,7 +179,15 @@ export default function OrdersPage() {
                                         <td className="px-6 py-4 text-xs text-gray-500">
                                             {new Date(order.createdAt).toLocaleString()}
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-6 py-4 flex items-center gap-2">
+                                            <button
+                                                onClick={() => { setSelectedOrder(order); setShowItemsModal(true); }}
+                                                className="inline-flex items-center gap-1 px-2 py-1 text-xs font-bold text-primary hover:bg-primary/10 rounded transition-colors border border-primary/20"
+                                                title="View Items"
+                                            >
+                                                <Eye className="h-3.5 w-3.5" />
+                                                View Items
+                                            </button>
                                             <select
                                                 className="text-xs bg-white border border-gray-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary"
                                                 value={order.status}
@@ -204,6 +214,74 @@ export default function OrdersPage() {
                     </table>
                 </div>
             </div>
+
+            {/* Items Modal */}
+            {showItemsModal && selectedOrder && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="w-full max-w-2xl max-h-[90vh] overflow-hidden bg-white rounded-2xl shadow-2xl flex flex-col">
+                        <div className="flex items-center justify-between border-b bg-white px-6 py-4 rounded-t-2xl">
+                            <div>
+                                <h2 className="text-xl font-bold">Order Items</h2>
+                                <p className="text-xs text-gray-500">Order ID: {selectedOrder.orderId}</p>
+                            </div>
+                            <button
+                                onClick={() => { setShowItemsModal(false); setSelectedOrder(null); }}
+                                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                            >
+                                <XCircle className="h-5 w-5 text-gray-400" />
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                            {selectedOrder.items.map((item, index) => (
+                                <div key={index} className="flex gap-4 p-4 border border-gray-100 rounded-xl hover:bg-gray-50 transition-colors">
+                                    <div className="h-24 w-24 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden border border-gray-100">
+                                        <img
+                                            src={item.product.imageUrl}
+                                            alt={item.product.name}
+                                            className="h-full w-full object-cover"
+                                        />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <h4 className="font-bold text-gray-900">{item.product.name}</h4>
+                                                <p className="text-xs text-gray-500">{item.product.phoneModel}</p>
+                                            </div>
+                                            <p className="font-bold text-primary">R{item.product.price.toLocaleString()}</p>
+                                        </div>
+                                        <div className="mt-4 flex flex-wrap gap-4 text-xs">
+                                            <div>
+                                                <span className="text-gray-400">Quantity:</span>
+                                                <span className="ml-1 font-semibold text-gray-900">{item.quantity}</span>
+                                            </div>
+                                            <div>
+                                                <span className="text-gray-400">Customization:</span>
+                                                <span className="ml-1 font-semibold text-gray-900 italic border-l pl-2 border-gray-200">
+                                                    {item.customization || 'None'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="p-6 border-t bg-gray-50 flex items-center justify-between rounded-b-2xl">
+                            <div>
+                                <p className="text-sm text-gray-500">Total Charged</p>
+                                <p className="text-2xl font-black text-gray-900">R{selectedOrder.total.toLocaleString()}</p>
+                            </div>
+                            <button
+                                onClick={() => { setShowItemsModal(false); setSelectedOrder(null); }}
+                                className="rounded-lg bg-primary px-6 py-2 text-sm font-bold text-white shadow-sm hover:bg-primary/90 transition-colors"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
