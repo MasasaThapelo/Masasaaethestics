@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import {
     Plus, Upload, X, Loader2, GripVertical, Eye, EyeOff,
     Trash2, Edit, Save, ChevronDown, Image as ImageIcon, Search,
-    ArrowRight, ArrowLeft, Smartphone, Tag, Database
+    ArrowRight, ArrowLeft, Smartphone, Tag, Database, Zap
 } from 'lucide-react';
 
 interface Product {
@@ -612,7 +612,8 @@ export default function ProductsPage() {
                                     onDrop={(e) => handleDrop(e, 'live', index)}
                                     onEdit={handleEdit}
                                     onDelete={handleDelete}
-                                    onToggleLive={() => performMove(product, product.isLive ? 'draft' : 'live')}
+                                    onToggleLive={() => performMove(product, 'draft')}
+                                    onToggleArrival={() => performMove(product, 'newArrival')}
                                     variant="live"
                                 />
                             ))
@@ -655,7 +656,8 @@ export default function ProductsPage() {
                                     onDrop={(e) => handleDrop(e, 'newArrival', index)}
                                     onEdit={handleEdit}
                                     onDelete={handleDelete}
-                                    onToggleLive={() => performMove(product, 'newArrival')}
+                                    onToggleLive={() => performMove(product, 'live')}
+                                    onToggleArrival={() => performMove(product, 'draft')}
                                     variant="newArrival"
                                 />
                             ))
@@ -698,7 +700,8 @@ export default function ProductsPage() {
                                     onDrop={(e) => handleDrop(e, 'draft', index)}
                                     onEdit={handleEdit}
                                     onDelete={handleDelete}
-                                    onToggleLive={() => performMove(product, 'draft')}
+                                    onToggleLive={() => performMove(product, 'live')}
+                                    onToggleArrival={() => performMove(product, 'newArrival')}
                                     variant="draft"
                                 />
                             ))
@@ -768,6 +771,7 @@ function DraggableCard({
     onEdit,
     onDelete,
     onToggleLive,
+    onToggleArrival,
     variant,
 }: {
     product: Product;
@@ -777,6 +781,7 @@ function DraggableCard({
     onEdit: (product: Product) => void;
     onDelete: (id: string) => void;
     onToggleLive: () => void;
+    onToggleArrival: () => void;
     variant: 'live' | 'draft' | 'newArrival';
 }) {
     return (
@@ -793,8 +798,17 @@ function DraggableCard({
                     : 'bg-white border-gray-100 opacity-90'
                 }`}
         >
-            {/* Grab handle - visible on desktop, hidden on mobile */}
-            <GripVertical className="h-5 w-5 text-gray-300 flex-shrink-0 hidden md:block" />
+            {/* Arrival Status Toggle (Replaces Grab Handle) */}
+            <button
+                onClick={(e) => { e.stopPropagation(); onToggleArrival(); }}
+                className={`p-1.5 rounded-lg transition-colors border group/arrival ${product.isNewArrival
+                    ? 'text-purple-600 border-purple-100 bg-purple-50'
+                    : 'text-gray-300 border-gray-100 hover:bg-gray-100 hover:text-purple-400'
+                    }`}
+                title={product.isNewArrival ? 'Move to Drafts' : 'Move to New Arrivals'}
+            >
+                <Zap className={`h-5 w-5 transition-transform ${product.isNewArrival ? 'fill-current scale-110' : 'group-hover/arrival:scale-110'}`} />
+            </button>
 
             <div className="relative h-14 w-14 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 border border-gray-100">
                 <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
@@ -802,10 +816,6 @@ function DraggableCard({
 
             <div className="flex-1 min-w-0">
                 <h4 className="text-sm font-bold text-gray-900 truncate">{product.name}</h4>
-                <div className="flex items-center gap-2 text-[10px] text-gray-500 font-medium">
-                    <span className="bg-gray-100 px-1.5 py-0.5 rounded uppercase">{product.phoneModel}</span>
-                    <span>R{product.price}</span>
-                </div>
             </div>
 
             <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -813,14 +823,12 @@ function DraggableCard({
                 <button
                     onClick={(e) => { e.stopPropagation(); onToggleLive(); }}
                     className={`p-1.5 rounded-lg transition-colors border ${variant === 'live'
-                        ? 'text-green-600 border-green-100 hover:bg-green-50'
-                        : variant === 'newArrival'
-                            ? 'text-purple-600 border-purple-100 hover:bg-purple-50'
-                            : 'text-gray-400 border-gray-100 hover:bg-gray-100'
+                        ? 'text-green-600 border-green-100 bg-green-50'
+                        : 'text-gray-400 border-gray-100 hover:bg-gray-100'
                         }`}
-                    title={variant === 'live' ? 'Move to Drafts' : (variant === 'newArrival' ? 'Move to Drafts' : 'Move to Live')}
+                    title={variant === 'live' ? 'Move to Drafts' : 'Move to Live'}
                 >
-                    {variant === 'live' ? <EyeOff className="h-4 w-4" /> : (variant === 'newArrival' ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />)}
+                    {variant === 'live' ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
 
                 <button
