@@ -17,6 +17,7 @@ interface Product {
     description?: string;
     isLive: boolean;
     isNewArrival: boolean;
+    isCollection: boolean;
     position: number;
     createdAt: string;
 }
@@ -42,15 +43,17 @@ export default function ProductsPage() {
         imageUrl: '',
         isLive: false,
         isNewArrival: false,
+        isCollection: false,
     });
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string>('');
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const liveProducts = products.filter(p => p.isLive && !p.isNewArrival).sort((a, b) => a.position - b.position);
-    const newArrivalProducts = products.filter(p => p.isNewArrival).sort((a, b) => a.position - b.position);
-    const draftProducts = products.filter(p => !p.isLive && !p.isNewArrival).sort((a, b) => a.position - b.position);
+    const liveProducts = products.filter(p => p.isLive && !p.isNewArrival && !p.isCollection).sort((a, b) => a.position - b.position);
+    const newArrivalProducts = products.filter(p => p.isNewArrival && !p.isCollection).sort((a, b) => a.position - b.position);
+    const draftProducts = products.filter(p => !p.isLive && !p.isNewArrival && !p.isCollection).sort((a, b) => a.position - b.position);
+    const collectionProducts = products.filter(p => p.isCollection).sort((a, b) => a.position - b.position);
 
     // Fetch products
     const fetchProducts = useCallback(async () => {
@@ -153,6 +156,7 @@ export default function ProductsPage() {
                         imageUrl: imageUrl || formData.imageUrl,
                         isLive: formData.isLive,
                         isNewArrival: formData.isNewArrival,
+                        isCollection: formData.isCollection,
                     }),
                 });
                 if (!res.ok) throw new Error('Failed to update');
@@ -213,6 +217,7 @@ export default function ProductsPage() {
             imageUrl: product.imageUrl,
             isLive: product.isLive,
             isNewArrival: product.isNewArrival,
+            isCollection: product.isCollection,
         });
         setImagePreview(product.imageUrl);
         setImageFile(null);
@@ -222,7 +227,7 @@ export default function ProductsPage() {
     const resetForm = () => {
         setShowForm(false);
         setEditingProduct(null);
-        setFormData({ name: '', category: '', phoneModel: '', price: 200, description: '', imageUrl: '', isLive: false, isNewArrival: false });
+        setFormData({ name: '', category: '', phoneModel: '', price: 200, description: '', imageUrl: '', isLive: false, isNewArrival: false, isCollection: false });
         setImageFile(null);
         setImagePreview('');
     };
@@ -541,7 +546,12 @@ export default function ProductsPage() {
                                         <input
                                             type="checkbox"
                                             checked={formData.isLive}
-                                            onChange={e => setFormData({ ...formData, isLive: e.target.checked, isNewArrival: e.target.checked ? false : formData.isNewArrival })}
+                                            onChange={e => setFormData({
+                                                ...formData,
+                                                isLive: e.target.checked,
+                                                isNewArrival: e.target.checked ? false : formData.isNewArrival,
+                                                isCollection: e.target.checked ? false : formData.isCollection
+                                            })}
                                             className="w-4 h-4 text-primary rounded"
                                         />
                                         <span className="text-sm font-medium text-gray-700">Publish immediately</span>
@@ -550,10 +560,29 @@ export default function ProductsPage() {
                                         <input
                                             type="checkbox"
                                             checked={formData.isNewArrival}
-                                            onChange={e => setFormData({ ...formData, isNewArrival: e.target.checked, isLive: e.target.checked ? false : formData.isLive })}
+                                            onChange={e => setFormData({
+                                                ...formData,
+                                                isNewArrival: e.target.checked,
+                                                isLive: e.target.checked ? false : formData.isLive,
+                                                isCollection: e.target.checked ? false : formData.isCollection
+                                            })}
                                             className="w-4 h-4 text-purple-600 rounded"
                                         />
                                         <span className="text-sm font-medium text-gray-700">Set as New Arrival (Coming Soon)</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.isCollection}
+                                            onChange={e => setFormData({
+                                                ...formData,
+                                                isCollection: e.target.checked,
+                                                isLive: e.target.checked ? false : formData.isLive,
+                                                isNewArrival: e.target.checked ? false : formData.isNewArrival
+                                            })}
+                                            className="w-4 h-4 text-blue-600 rounded"
+                                        />
+                                        <span className="text-sm font-medium text-gray-700">Add to Collection (Fixed section)</span>
                                     </label>
                                 </div>
                                 <div className="flex gap-3">
@@ -708,6 +737,60 @@ export default function ProductsPage() {
                         )}
                     </div>
                 </div>
+            </div>
+
+            {/* Collection Section */}
+            <div className="mt-12 space-y-6">
+                <div className="flex items-center justify-between border-b border-gray-200 pb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-100 rounded-lg">
+                            <Database className="h-5 w-5 text-blue-600" />
+                        </div>
+                        <div>
+                            <h2 className="text-xl font-bold text-gray-900">The Collection</h2>
+                            <p className="text-sm text-gray-500">Fixed products displayed at the bottom of the landing page</p>
+                        </div>
+                    </div>
+                    <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-bold">
+                        {collectionProducts.length} Items
+                    </span>
+                </div>
+
+                {collectionProducts.length === 0 ? (
+                    <div className="bg-white border-2 border-dashed border-gray-200 rounded-2xl py-12 text-center">
+                        <Database className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+                        <p className="text-gray-500">No products in collection yet</p>
+                        <p className="text-xs text-gray-400 mt-1">Mark products as 'Collection' in the editor to see them here</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {collectionProducts.map(product => (
+                            <div key={product.id} className="bg-white border border-blue-100 rounded-xl p-3 flex items-center gap-4 transition-all hover:shadow-md">
+                                <div className="h-14 w-14 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 border border-gray-100">
+                                    <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="text-sm font-bold text-gray-900 truncate">{product.name}</h4>
+                                    <p className="text-[10px] text-gray-400 font-medium uppercase">{product.phoneModel}</p>
+                                </div>
+                                <div className="flex items-center gap-1.5 flex-shrink-0">
+                                    <button
+                                        onClick={() => handleEdit(product)}
+                                        className="p-1.5 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                                    >
+                                        <Edit className="h-4 w-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(product.id)}
+                                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Live Preview */}

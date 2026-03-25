@@ -10,13 +10,16 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const liveOnly = searchParams.get('live') === 'true';
     const newArrivalOnly = searchParams.get('newArrival') === 'true';
+    const collectionOnly = searchParams.get('collection') === 'true';
 
     let query = supabase.from('products').select('*').order('position', { ascending: true });
 
     if (liveOnly) {
-        query = query.eq('isLive', true).eq('isNewArrival', false);
+        query = query.eq('isLive', true).eq('isNewArrival', false).eq('isCollection', false);
     } else if (newArrivalOnly) {
-        query = query.eq('isNewArrival', true);
+        query = query.eq('isNewArrival', true).eq('isCollection', false);
+    } else if (collectionOnly) {
+        query = query.eq('isCollection', true);
     }
 
     const { data, error } = await query;
@@ -55,6 +58,7 @@ export async function POST(request: NextRequest) {
                 description: p.description || '',
                 isLive: true,
                 isNewArrival: false,
+                isCollection: false,
                 position: index,
                 createdAt: new Date().toISOString(),
             }));
@@ -90,8 +94,8 @@ export async function PUT(request: NextRequest) {
 
         // Batch position update
         if (body.action === 'updatePositions' && Array.isArray(body.updates)) {
-            const promises = body.updates.map(({ id, position, isLive, isNewArrival }: any) =>
-                supabase!.from('products').update({ position, isLive, isNewArrival }).eq('id', id)
+            const promises = body.updates.map(({ id, position, isLive, isNewArrival, isCollection }: any) =>
+                supabase!.from('products').update({ position, isLive, isNewArrival, isCollection }).eq('id', id)
             );
             const results = await Promise.all(promises);
             const hasError = results.some((r: any) => r.error);

@@ -15,21 +15,25 @@ export default function ProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'All'>('All');
   const [liveProducts, setLiveProducts] = useState<Product[]>([]);
   const [newArrivalProducts, setNewArrivalProducts] = useState<Product[]>([]);
+  const [collectionProducts, setCollectionProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [liveRes, newArrivalRes] = await Promise.all([
+        const [liveRes, newArrivalRes, collectionRes] = await Promise.all([
           fetch('/api/products?live=true'),
-          fetch('/api/products?newArrival=true')
+          fetch('/api/products?newArrival=true'),
+          fetch('/api/products?collection=true')
         ]);
 
         const liveData = await liveRes.json();
         const newArrivalData = await newArrivalRes.json();
+        const collectionData = await collectionRes.json();
 
         if (Array.isArray(liveData)) setLiveProducts(liveData);
         if (Array.isArray(newArrivalData)) setNewArrivalProducts(newArrivalData);
+        if (Array.isArray(collectionData)) setCollectionProducts(collectionData);
       } catch (error) {
         console.error('Error fetching products:', error);
       } finally {
@@ -152,34 +156,28 @@ export default function ProductsPage() {
             </section>
           )}
 
-          {/* Main Collection Grid */}
-          <section className="space-y-8">
-            <div className="flex items-center justify-between border-b border-border pb-4">
-              <h2 className="text-2xl font-bold tracking-tight text-foreground">
-                {selectedCategory === 'All' ? 'Our Collection' : selectedCategory}
-              </h2>
-              <span className="text-sm text-muted-foreground">{displayedStaticProducts.length} Designs</span>
-            </div>
 
-            <motion.div
-              layout
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
-            >
-              <AnimatePresence mode='popLayout'>
-                {displayedStaticProducts.map((product, index) => (
+          {/* Dynamic Collection Section */}
+          {collectionProducts.length > 0 && selectedCategory === 'All' && (
+            <section className="space-y-8 pt-16 border-t border-border/50">
+              <div className="flex items-center justify-between border-b border-border pb-4">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-2xl font-bold tracking-tight text-foreground">The Collection</h2>
+                  <span className="bg-blue-50 text-blue-500 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    Signature Series
+                  </span>
+                </div>
+                <span className="text-sm text-muted-foreground">{collectionProducts.length} Items</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                {collectionProducts.map((product, index) => (
                   <ProductCard key={product.id} product={product} index={index} />
                 ))}
-              </AnimatePresence>
-            </motion.div>
-
-            {displayedStaticProducts.length === 0 && (
-              <div className="text-center py-20 text-muted-foreground">
-                No products found in this category.
               </div>
-            )}
-          </section>
+            </section>
+          )}
         </div>
       </div>
-    </div>
+    </div >
   );
 }
