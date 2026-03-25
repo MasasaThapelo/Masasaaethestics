@@ -250,13 +250,16 @@ export default function ProductsPage() {
         setDragOverZone(null);
 
         if (!draggedProduct) return;
+        performMove(draggedProduct, targetZone, dropIndex);
+    };
 
+    const performMove = (product: Product, targetZone: 'live' | 'draft', dropIndex?: number) => {
         const isMovingToLive = targetZone === 'live';
-        const wasLive = draggedProduct.isLive;
+        const wasLive = product.isLive;
 
         // Update the product's live status
         const updatedProducts = products.map(p => {
-            if (p.id === draggedProduct.id) {
+            if (p.id === product.id) {
                 return { ...p, isLive: isMovingToLive };
             }
             return p;
@@ -267,15 +270,16 @@ export default function ProductsPage() {
             .filter(p => p.isLive === isMovingToLive)
             .sort((a, b) => a.position - b.position);
 
-        // If dropping at a specific index, reorder
+        // If dropping/moving at a specific index, reorder
         if (dropIndex !== undefined) {
-            const movedItem = targetList.find(p => p.id === draggedProduct.id);
+            const movedItem = targetList.find(p => p.id === product.id);
             if (movedItem) {
-                const filtered = targetList.filter(p => p.id !== draggedProduct.id);
+                const filtered = targetList.filter(p => p.id !== product.id);
                 filtered.splice(dropIndex, 0, movedItem);
                 filtered.forEach((p, i) => p.position = i);
             }
         } else {
+            // If just moving to a new zone without a specific index, put at the end
             targetList.forEach((p, i) => p.position = i);
         }
 
@@ -286,6 +290,28 @@ export default function ProductsPage() {
                 .sort((a, b) => a.position - b.position);
             sourceList.forEach((p, i) => p.position = i);
         }
+
+        setProducts(updatedProducts);
+        setHasUnsavedChanges(true);
+    };
+
+    const handleMoveInZone = (product: Product, direction: 'up' | 'down') => {
+        const zoneProducts = products
+            .filter(p => p.isLive === product.isLive)
+            .sort((a, b) => a.position - b.position);
+
+        const currentIndex = zoneProducts.findIndex(p => p.id === product.id);
+        const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+
+        if (targetIndex < 0 || targetIndex >= zoneProducts.length) return;
+
+        // Swap positions
+        const targetProduct = zoneProducts[targetIndex];
+        const updatedProducts = products.map(p => {
+            if (p.id === product.id) return { ...p, position: targetIndex };
+            if (p.id === targetProduct.id) return { ...p, position: currentIndex };
+            return p;
+        });
 
         setProducts(updatedProducts);
         setHasUnsavedChanges(true);
@@ -347,8 +373,8 @@ export default function ProductsPage() {
                     <button
                         onClick={() => setShowPreview(!showPreview)}
                         className={`inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${showPreview
-                                ? 'border-primary bg-primary/10 text-primary'
-                                : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
                             }`}
                     >
                         <Eye className="h-4 w-4" />
@@ -516,8 +542,8 @@ export default function ProductsPage() {
                     onDragLeave={handleDragLeave}
                     onDrop={(e) => handleDrop(e, 'live')}
                     className={`rounded-2xl border-2 transition-colors min-h-[300px] ${dragOverZone === 'live'
-                            ? 'border-green-400 bg-green-50/50'
-                            : 'border-green-200 bg-green-50/20'
+                        ? 'border-green-400 bg-green-50/50'
+                        : 'border-green-200 bg-green-50/20'
                         }`}
                 >
                     <div className="flex items-center justify-between px-5 py-4 border-b border-green-100">
@@ -542,11 +568,15 @@ export default function ProductsPage() {
                                     key={product.id}
                                     product={product}
                                     index={index}
+                                    isFirst={index === 0}
+                                    isLast={index === liveProducts.length - 1}
                                     onDragStart={handleDragStart}
                                     onDragEnd={handleDragEnd}
                                     onDrop={(e) => handleDrop(e, 'live', index)}
                                     onEdit={handleEdit}
                                     onDelete={handleDelete}
+                                    onToggleLive={() => performMove(product, product.isLive ? 'draft' : 'live')}
+                                    onMove={(dir) => handleMoveInZone(product, dir)}
                                     variant="live"
                                 />
                             ))
@@ -560,8 +590,8 @@ export default function ProductsPage() {
                     onDragLeave={handleDragLeave}
                     onDrop={(e) => handleDrop(e, 'draft')}
                     className={`rounded-2xl border-2 transition-colors min-h-[300px] ${dragOverZone === 'draft'
-                            ? 'border-gray-400 bg-gray-50'
-                            : 'border-gray-200 bg-gray-50/50'
+                        ? 'border-gray-400 bg-gray-50'
+                        : 'border-gray-200 bg-gray-50/50'
                         }`}
                 >
                     <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
@@ -586,11 +616,15 @@ export default function ProductsPage() {
                                     key={product.id}
                                     product={product}
                                     index={index}
+                                    isFirst={index === 0}
+                                    isLast={index === draftProducts.length - 1}
                                     onDragStart={handleDragStart}
                                     onDragEnd={handleDragEnd}
                                     onDrop={(e) => handleDrop(e, 'draft', index)}
                                     onEdit={handleEdit}
                                     onDelete={handleDelete}
+                                    onToggleLive={() => performMove(product, product.isLive ? 'draft' : 'live')}
+                                    onMove={(dir) => handleMoveInZone(product, dir)}
                                     variant="draft"
                                 />
                             ))
@@ -655,20 +689,28 @@ export default function ProductsPage() {
 function DraggableCard({
     product,
     index,
+    isFirst,
+    isLast,
     onDragStart,
     onDragEnd,
     onDrop,
     onEdit,
     onDelete,
+    onToggleLive,
+    onMove,
     variant,
 }: {
     product: Product;
     index: number;
+    isFirst: boolean;
+    isLast: boolean;
     onDragStart: (e: React.DragEvent, product: Product) => void;
     onDragEnd: (e: React.DragEvent) => void;
     onDrop: (e: React.DragEvent) => void;
     onEdit: (product: Product) => void;
     onDelete: (id: string) => void;
+    onToggleLive: () => void;
+    onMove: (dir: 'up' | 'down') => void;
     variant: 'live' | 'draft';
 }) {
     return (
@@ -679,36 +721,67 @@ function DraggableCard({
             onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
             onDrop={(e) => { e.stopPropagation(); onDrop(e); }}
             className={`flex items-center gap-4 rounded-xl p-3 border cursor-grab active:cursor-grabbing transition-all hover:shadow-md ${variant === 'live'
-                    ? 'bg-white border-green-100 hover:border-green-300'
-                    : 'bg-white border-gray-100 hover:border-gray-300 opacity-75 hover:opacity-100'
+                ? 'bg-white border-green-100'
+                : 'bg-white border-gray-100 opacity-90'
                 }`}
         >
-            <GripVertical className="h-5 w-5 text-gray-300 flex-shrink-0" />
+            {/* Grab handle - visible on desktop, hidden on mobile */}
+            <GripVertical className="h-5 w-5 text-gray-300 flex-shrink-0 hidden md:block" />
 
-            <div className="relative h-14 w-14 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
+            <div className="relative h-14 w-14 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100 border border-gray-100">
                 <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
             </div>
 
             <div className="flex-1 min-w-0">
                 <h4 className="text-sm font-bold text-gray-900 truncate">{product.name}</h4>
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                    <span>{product.phoneModel}</span>
-                    <span>•</span>
+                <div className="flex items-center gap-2 text-[10px] text-gray-500 font-medium">
+                    <span className="bg-gray-100 px-1.5 py-0.5 rounded uppercase">{product.phoneModel}</span>
                     <span>R{product.price}</span>
                 </div>
             </div>
 
-            <div className="flex items-center gap-1 flex-shrink-0">
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+                {/* Mobile reordering - Visible only on small screens */}
+                <div className="flex items-center gap-1 md:hidden">
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onMove('up'); }}
+                        disabled={isFirst}
+                        className="p-1 px-1.5 text-gray-400 hover:text-primary disabled:opacity-30 border border-gray-100 rounded"
+                    >
+                        <ArrowLeft className="h-3 w-3 rotate-90" />
+                    </button>
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onMove('down'); }}
+                        disabled={isLast}
+                        className="p-1 px-1.5 text-gray-400 hover:text-primary disabled:opacity-30 border border-gray-100 rounded"
+                    >
+                        <ArrowLeft className="h-3 w-3 -rotate-90" />
+                    </button>
+                    <div className="w-px h-4 bg-gray-100 mx-1" />
+                </div>
+
+                {/* Status Toggle - Visible on all screens */}
+                <button
+                    onClick={(e) => { e.stopPropagation(); onToggleLive(); }}
+                    className={`p-1.5 rounded-lg transition-colors border ${variant === 'live'
+                        ? 'text-green-600 border-green-100 hover:bg-green-50'
+                        : 'text-gray-400 border-gray-100 hover:bg-gray-100'
+                        }`}
+                    title={variant === 'live' ? 'Move to Drafts' : 'Move to Live'}
+                >
+                    {variant === 'live' ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+
                 <button
                     onClick={(e) => { e.stopPropagation(); onEdit(product); }}
-                    className="p-1.5 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                    className="p-1.5 text-gray-400 hover:text-primary hover:bg-primary/10 border border-transparent hover:border-primary/10 rounded-lg transition-colors"
                     title="Edit"
                 >
                     <Edit className="h-4 w-4" />
                 </button>
                 <button
                     onClick={(e) => { e.stopPropagation(); onDelete(product.id); }}
-                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                    className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 border border-transparent hover:border-red-100 rounded-lg transition-colors"
                     title="Delete"
                 >
                     <Trash2 className="h-4 w-4" />
