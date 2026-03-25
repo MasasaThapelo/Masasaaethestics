@@ -567,16 +567,12 @@ export default function ProductsPage() {
                                 <DraggableCard
                                     key={product.id}
                                     product={product}
-                                    index={index}
-                                    isFirst={index === 0}
-                                    isLast={index === liveProducts.length - 1}
                                     onDragStart={handleDragStart}
                                     onDragEnd={handleDragEnd}
                                     onDrop={(e) => handleDrop(e, 'live', index)}
                                     onEdit={handleEdit}
                                     onDelete={handleDelete}
                                     onToggleLive={() => performMove(product, product.isLive ? 'draft' : 'live')}
-                                    onMove={(dir) => handleMoveInZone(product, dir)}
                                     variant="live"
                                 />
                             ))
@@ -615,16 +611,12 @@ export default function ProductsPage() {
                                 <DraggableCard
                                     key={product.id}
                                     product={product}
-                                    index={index}
-                                    isFirst={index === 0}
-                                    isLast={index === draftProducts.length - 1}
                                     onDragStart={handleDragStart}
                                     onDragEnd={handleDragEnd}
                                     onDrop={(e) => handleDrop(e, 'draft', index)}
                                     onEdit={handleEdit}
                                     onDelete={handleDelete}
                                     onToggleLive={() => performMove(product, product.isLive ? 'draft' : 'live')}
-                                    onMove={(dir) => handleMoveInZone(product, dir)}
                                     variant="draft"
                                 />
                             ))
@@ -688,29 +680,21 @@ export default function ProductsPage() {
 // --- Draggable Card Component ---
 function DraggableCard({
     product,
-    index,
-    isFirst,
-    isLast,
     onDragStart,
     onDragEnd,
     onDrop,
     onEdit,
     onDelete,
     onToggleLive,
-    onMove,
     variant,
 }: {
     product: Product;
-    index: number;
-    isFirst: boolean;
-    isLast: boolean;
     onDragStart: (e: React.DragEvent, product: Product) => void;
     onDragEnd: (e: React.DragEvent) => void;
     onDrop: (e: React.DragEvent) => void;
     onEdit: (product: Product) => void;
     onDelete: (id: string) => void;
     onToggleLive: () => void;
-    onMove: (dir: 'up' | 'down') => void;
     variant: 'live' | 'draft';
 }) {
     return (
@@ -741,25 +725,6 @@ function DraggableCard({
             </div>
 
             <div className="flex items-center gap-1.5 flex-shrink-0">
-                {/* Mobile reordering - Visible only on small screens */}
-                <div className="flex items-center gap-1 md:hidden">
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onMove('up'); }}
-                        disabled={isFirst}
-                        className="p-1 px-1.5 text-gray-400 hover:text-primary disabled:opacity-30 border border-gray-100 rounded"
-                    >
-                        <ArrowLeft className="h-3 w-3 rotate-90" />
-                    </button>
-                    <button
-                        onClick={(e) => { e.stopPropagation(); onMove('down'); }}
-                        disabled={isLast}
-                        className="p-1 px-1.5 text-gray-400 hover:text-primary disabled:opacity-30 border border-gray-100 rounded"
-                    >
-                        <ArrowLeft className="h-3 w-3 -rotate-90" />
-                    </button>
-                    <div className="w-px h-4 bg-gray-100 mx-1" />
-                </div>
-
                 {/* Status Toggle - Visible on all screens */}
                 <button
                     onClick={(e) => { e.stopPropagation(); onToggleLive(); }}
