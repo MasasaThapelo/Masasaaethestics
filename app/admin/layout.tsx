@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, ShoppingBag, Package, Settings, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Package, Settings, LogOut, Menu, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 import { useEffect, useState } from 'react';
@@ -29,7 +29,7 @@ export default function AdminLayout({
 
         const checkAuth = async () => {
             // Check for development bypass
-            const isDevBypass = localStorage.getItem('admin_dev_bypass') === 'true';
+            const isDevBypass = typeof window !== 'undefined' && localStorage.getItem('admin_dev_bypass') === 'true';
 
             if (isDevBypass) {
                 setIsAuthenticated(true);
@@ -62,20 +62,29 @@ export default function AdminLayout({
         router.push('/admin/login');
     };
 
-    if (isLoginPage) {
-        return <>{children}</>;
-    }
-
-    if (loading) {
-        return <div className="flex h-screen items-center justify-center">Loading...</div>;
-    }
-
     const navItems = [
         { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
         { name: 'Orders', href: '/admin/orders', icon: ShoppingBag },
         { name: 'Products', href: '/admin/products', icon: Package },
         { name: 'Settings', href: '/admin/settings', icon: Settings },
     ];
+
+    // Handle initial loading state
+    if (loading && !isLoginPage) {
+        return (
+            <div className="flex h-screen w-full items-center justify-center bg-gray-50">
+                <div className="flex flex-col items-center gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <p className="text-sm text-gray-500 animate-pulse">Loading admin...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Login page bypasses sidebars
+    if (isLoginPage) {
+        return <>{children}</>;
+    }
 
     return (
         <div className="flex min-h-screen bg-gray-100">
