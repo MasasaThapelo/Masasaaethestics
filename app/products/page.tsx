@@ -1,21 +1,44 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Header from '@/components/Header';
 import ProductCard from '@/components/ProductCard';
-import { products, ProductCategory, getProductsByCategory } from '@/data/products';
+import { products as staticProducts, ProductCategory, Product } from '@/data/products';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
+import { Loader2 } from 'lucide-react';
 
-const categories: ProductCategory[] = ['Botanical Blossom', 'White Heaven', 'Strawberry Shortcake'];
+const staticCategories: ProductCategory[] = ['Botanical Blossom', 'White Heaven', 'Strawberry Shortcake'];
 
 export default function ProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'All'>('All');
+  const [liveProducts, setLiveProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const displayedProducts = selectedCategory === 'All'
-    ? products
-    : getProductsByCategory(selectedCategory);
+  useEffect(() => {
+    const fetchLiveProducts = async () => {
+      try {
+        const res = await fetch('/api/products?live=true');
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setLiveProducts(data);
+        }
+      } catch (error) {
+        console.error('Error fetching live products:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchLiveProducts();
+  }, []);
+
+  const categories = staticCategories;
+
+  const displayedStaticProducts = selectedCategory === 'All'
+    ? staticProducts
+    : staticProducts.filter(p => p.category === selectedCategory);
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -55,7 +78,7 @@ export default function ProductsPage() {
           </div>
         </div>
 
-        <div className="container mx-auto px-4 py-12 space-y-12">
+        <div className="container mx-auto px-4 py-12 space-y-16">
           {/* Category Filters */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -88,23 +111,47 @@ export default function ProductsPage() {
             ))}
           </motion.div>
 
-          {/* Products Grid */}
-          <motion.div
-            layout
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
-          >
-            <AnimatePresence mode='popLayout'>
-              {displayedProducts.map((product, index) => (
-                <ProductCard key={product.id} product={product} index={index} />
-              ))}
-            </AnimatePresence>
-          </motion.div>
-
-          {displayedProducts.length === 0 && (
-            <div className="text-center py-20 text-muted-foreground">
-              No products found in this category.
-            </div>
+          {/* Latest Uploads Section */}
+          {liveProducts.length > 0 && selectedCategory === 'All' && (
+            <section className="space-y-8">
+              <div className="flex items-center justify-between border-b border-border pb-4">
+                <h2 className="text-2xl font-bold tracking-tight text-foreground">Latest Releases</h2>
+                <span className="text-sm text-muted-foreground">{liveProducts.length} New Designs</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                {liveProducts.map((product, index) => (
+                  <ProductCard key={product.id} product={product} index={index} />
+                ))}
+              </div>
+            </section>
           )}
+
+          {/* Main Collection Grid */}
+          <section className="space-y-8">
+            <div className="flex items-center justify-between border-b border-border pb-4">
+              <h2 className="text-2xl font-bold tracking-tight text-foreground">
+                {selectedCategory === 'All' ? 'Our Collection' : selectedCategory}
+              </h2>
+              <span className="text-sm text-muted-foreground">{displayedStaticProducts.length} Designs</span>
+            </div>
+
+            <motion.div
+              layout
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
+            >
+              <AnimatePresence mode='popLayout'>
+                {displayedStaticProducts.map((product, index) => (
+                  <ProductCard key={product.id} product={product} index={index} />
+                ))}
+              </AnimatePresence>
+            </motion.div>
+
+            {displayedStaticProducts.length === 0 && (
+              <div className="text-center py-20 text-muted-foreground">
+                No products found in this category.
+              </div>
+            )}
+          </section>
         </div>
       </div>
     </div>
