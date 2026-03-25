@@ -21,13 +21,13 @@ export default function ProductsPage() {
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Faint Background Logo */}
       <div
-        className="fixed inset-0 pointer-events-none z-0 flex items-center justify-center opacity-[0.03] select-none"
+        className="fixed inset-0 pointer-events-none z-0 flex items-center justify-center opacity-[0.1] select-none"
         aria-hidden="true"
       >
         <img
           src="/images/Masasa-logo.png"
           alt=""
-          className="w-[80%] max-w-2xl object-contain grayscale"
+          className="w-[80%] max-w-2xl object-contain"
         />
       </div>
 
