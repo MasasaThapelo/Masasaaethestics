@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Header from '@/components/Header';
-import { getProductById as getStaticProduct, Product } from '@/data/products';
+import { getProductById as getStaticProduct, getUniquePhoneModels, Product } from '@/data/products';
 import { useCart } from '@/components/CartContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -18,7 +18,9 @@ export default function ProductDetailPage() {
   const { addToCart } = useCart();
   const [product, setProduct] = useState<Product | null | undefined>(undefined);
   const [customization, setCustomization] = useState('');
+  const [selectedPhoneModel, setSelectedPhoneModel] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+  const [showError, setShowError] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -62,11 +64,16 @@ export default function ProductDetailPage() {
   }
 
   const handleAddToCart = () => {
+    if (!selectedPhoneModel) {
+      setShowError(true);
+      return;
+    }
+
     setIsAdding(true);
     addToCart({
       productId: product.id,
       product: product,
-      customization: customization.trim(),
+      customization: `Model: ${selectedPhoneModel}${customization ? ` | Note: ${customization}` : ''}`,
       quantity: 1,
     });
 
@@ -150,25 +157,49 @@ export default function ProductDetailPage() {
               </div>
             </motion.div>
 
-            {/* Customization */}
+            {/* Phone Model & Customization */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.6 }}
-              className="space-y-4 bg-secondary/30 p-6 rounded-xl"
+              className="space-y-6 bg-secondary/30 p-6 rounded-xl"
             >
-              <label htmlFor="customization" className="block text-sm font-medium text-foreground">
-                Personalization (Optional)
-              </label>
-              <div className="relative">
-                <textarea
-                  id="customization"
-                  value={customization}
-                  onChange={(e) => setCustomization(e.target.value)}
-                  placeholder="Add initials, names, or special requests..."
-                  className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y"
-                  rows={3}
+              <div className="space-y-3">
+                <label htmlFor="phoneModel" className="block text-sm font-bold text-foreground">
+                  Phone Model <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  id="phoneModel"
+                  placeholder="e.g. iPhone 15 Pro, Samsung S24 Ultra..."
+                  value={selectedPhoneModel}
+                  onChange={(e) => {
+                    setSelectedPhoneModel(e.target.value);
+                    setShowError(false);
+                  }}
+                  className={cn(
+                    "bg-background",
+                    showError && "border-red-500 ring-red-500"
+                  )}
                 />
+                {showError && (
+                  <p className="text-xs text-red-500 font-medium">Please enter your phone model to continue</p>
+                )}
+              </div>
+
+              <div className="space-y-3">
+                <label htmlFor="customization" className="block text-sm font-bold text-foreground">
+                  Personalization (Optional)
+                </label>
+                <div className="relative">
+                  <textarea
+                    id="customization"
+                    value={customization}
+                    onChange={(e) => setCustomization(e.target.value)}
+                    placeholder="Add initials, names, or special requests..."
+                    className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-y"
+                    rows={3}
+                  />
+                </div>
               </div>
             </motion.div>
 
