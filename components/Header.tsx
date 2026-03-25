@@ -52,9 +52,31 @@ export default function Header() {
             </Button>
           </div>
 
-          {/* Logo (Centered on mobile, Left on Desktop) */}
-          <Link href="/" className="flex items-center gap-2 group md:absolute md:left-1/2 md:transform md:-translate-x-1/2">
-            <div className="relative w-8 h-8 md:w-10 md:h-10 transition-transform group-hover:scale-105">
+          {/* Desktop Logo (Left Side) */}
+          <div className="hidden md:flex items-center">
+            <Link href="/" className="relative w-12 h-12 transition-transform hover:scale-105">
+              <Image
+                src="/images/Masasa-logo.png"
+                alt="Masasa Aesthetics"
+                fill
+                className="object-contain"
+              />
+            </Link>
+          </div>
+
+          {/* Center Brand Name (Hidden on Mobile, Centered on Desktop) */}
+          <Link
+            href="/"
+            className="hidden md:flex absolute left-1/2 transform -translate-x-1/2 items-center gap-2 group"
+          >
+            <span className="font-bold text-xl tracking-tight text-foreground group-hover:text-primary transition-colors">
+              Masasa Aesthetics
+            </span>
+          </Link>
+
+          {/* Mobile Logo (Center) */}
+          <Link href="/" className="md:hidden flex items-center justify-center absolute left-1/2 transform -translate-x-1/2">
+            <div className="relative w-10 h-10">
               <Image
                 src="/images/Masasa-logo.png"
                 alt="Masasa Aesthetics"
@@ -62,21 +84,7 @@ export default function Header() {
                 className="object-contain"
               />
             </div>
-            <span className="hidden md:block font-bold text-xl tracking-tight text-foreground group-hover:text-primary transition-colors">
-              Masasa Aesthetics
-            </span>
           </Link>
-
-          {/* Desktop Navigation (Left Side) */}
-          <div className="hidden md:flex items-center space-x-8">
-            {/* Left intentionally empty or can add links here if logo moves to center */}
-            <Link href="/products" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-              Shop All
-            </Link>
-            <Link href="/products?category=new" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-              New Arrivals
-            </Link>
-          </div>
 
           {/* Right Side Icons */}
           <div className="flex items-center gap-2">

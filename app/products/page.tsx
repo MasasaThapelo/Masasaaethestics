@@ -14,24 +14,30 @@ const staticCategories: ProductCategory[] = ['Botanical Blossom', 'White Heaven'
 export default function ProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'All'>('All');
   const [liveProducts, setLiveProducts] = useState<Product[]>([]);
+  const [newArrivalProducts, setNewArrivalProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchLiveProducts = async () => {
+    const fetchData = async () => {
       try {
-        const res = await fetch('/api/products?live=true');
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setLiveProducts(data);
-        }
+        const [liveRes, newArrivalRes] = await Promise.all([
+          fetch('/api/products?live=true'),
+          fetch('/api/products?newArrival=true')
+        ]);
+
+        const liveData = await liveRes.json();
+        const newArrivalData = await newArrivalRes.json();
+
+        if (Array.isArray(liveData)) setLiveProducts(liveData);
+        if (Array.isArray(newArrivalData)) setNewArrivalProducts(newArrivalData);
       } catch (error) {
-        console.error('Error fetching live products:', error);
+        console.error('Error fetching products:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchLiveProducts();
+    fetchData();
   }, []);
 
   const categories = staticCategories;
@@ -120,6 +126,26 @@ export default function ProductsPage() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                 {liveProducts.map((product, index) => (
+                  <ProductCard key={product.id} product={product} index={index} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* New Arrivals Section */}
+          {newArrivalProducts.length > 0 && selectedCategory === 'All' && (
+            <section className="space-y-8">
+              <div className="flex items-center justify-between border-b border-border pb-4">
+                <div className="flex items-center gap-3">
+                  <h2 className="text-2xl font-bold tracking-tight text-foreground">New Arrivals</h2>
+                  <span className="bg-purple-100 text-purple-600 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    Coming Soon
+                  </span>
+                </div>
+                <span className="text-sm text-muted-foreground">{newArrivalProducts.length} Upcoming Designs</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                {newArrivalProducts.map((product, index) => (
                   <ProductCard key={product.id} product={product} index={index} />
                 ))}
               </div>

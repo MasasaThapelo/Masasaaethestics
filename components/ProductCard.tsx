@@ -33,10 +33,19 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
           {/* Overlay gradient */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
+          {/* Coming Soon Badge */}
+          {product.isNewArrival && (
+            <div className="absolute top-4 right-4 z-10">
+              <span className="bg-purple-600 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider shadow-lg">
+                Coming Soon
+              </span>
+            </div>
+          )}
+
           {/* Quick Action Button */}
           <div className="absolute bottom-4 left-4 right-4 translate-y-4 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
             <Button className="w-full bg-white/90 text-black hover:bg-white backdrop-blur-sm shadow-xl font-medium">
-              View Details
+              {product.isNewArrival ? 'Preview' : 'View Details'}
             </Button>
           </div>
         </div>

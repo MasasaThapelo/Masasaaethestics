@@ -183,9 +183,15 @@ export default function ProductDetailPage() {
                 size="lg"
                 onClick={handleAddToCart}
                 isLoading={isAdding}
-                className="w-full text-lg h-14 rounded-full"
+                disabled={product.isNewArrival}
+                className={cn(
+                  "w-full text-lg h-14 rounded-full",
+                  product.isNewArrival && "bg-gray-200 text-gray-400 cursor-not-allowed hover:bg-gray-200"
+                )}
               >
-                {isAdding ? 'Adding to Cart...' : 'Add to Cart'}
+                {product.isNewArrival
+                  ? 'Coming Soon'
+                  : (isAdding ? 'Adding to Cart...' : 'Add to Cart')}
               </Button>
 
               <div className="flex items-center justify-center gap-6 text-xs text-muted-foreground">

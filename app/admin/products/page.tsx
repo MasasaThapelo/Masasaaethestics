@@ -16,6 +16,7 @@ interface Product {
     imageUrl: string;
     description?: string;
     isLive: boolean;
+    isNewArrival: boolean;
     position: number;
     createdAt: string;
 }
@@ -40,14 +41,16 @@ export default function ProductsPage() {
         description: '',
         imageUrl: '',
         isLive: false,
+        isNewArrival: false,
     });
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string>('');
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const liveProducts = products.filter(p => p.isLive).sort((a, b) => a.position - b.position);
-    const draftProducts = products.filter(p => !p.isLive).sort((a, b) => a.position - b.position);
+    const liveProducts = products.filter(p => p.isLive && !p.isNewArrival).sort((a, b) => a.position - b.position);
+    const newArrivalProducts = products.filter(p => p.isNewArrival).sort((a, b) => a.position - b.position);
+    const draftProducts = products.filter(p => !p.isLive && !p.isNewArrival).sort((a, b) => a.position - b.position);
 
     // Fetch products
     const fetchProducts = useCallback(async () => {
@@ -149,6 +152,7 @@ export default function ProductsPage() {
                         description: formData.description,
                         imageUrl: imageUrl || formData.imageUrl,
                         isLive: formData.isLive,
+                        isNewArrival: formData.isNewArrival,
                     }),
                 });
                 if (!res.ok) throw new Error('Failed to update');
@@ -208,6 +212,7 @@ export default function ProductsPage() {
             description: product.description || '',
             imageUrl: product.imageUrl,
             isLive: product.isLive,
+            isNewArrival: product.isNewArrival,
         });
         setImagePreview(product.imageUrl);
         setImageFile(null);
@@ -217,7 +222,7 @@ export default function ProductsPage() {
     const resetForm = () => {
         setShowForm(false);
         setEditingProduct(null);
-        setFormData({ name: '', category: '', phoneModel: '', price: 200, description: '', imageUrl: '', isLive: false });
+        setFormData({ name: '', category: '', phoneModel: '', price: 200, description: '', imageUrl: '', isLive: false, isNewArrival: false });
         setImageFile(null);
         setImagePreview('');
     };
@@ -245,7 +250,7 @@ export default function ProductsPage() {
         setDragOverZone(null);
     };
 
-    const handleDrop = (e: React.DragEvent, targetZone: 'live' | 'draft', dropIndex?: number) => {
+    const handleDrop = (e: React.DragEvent, targetZone: 'live' | 'draft' | 'newArrival', dropIndex?: number) => {
         e.preventDefault();
         setDragOverZone(null);
 
@@ -253,21 +258,31 @@ export default function ProductsPage() {
         performMove(draggedProduct, targetZone, dropIndex);
     };
 
-    const performMove = (product: Product, targetZone: 'live' | 'draft', dropIndex?: number) => {
+    const performMove = (product: Product, targetZone: 'live' | 'draft' | 'newArrival', dropIndex?: number) => {
         const isMovingToLive = targetZone === 'live';
+        const isMovingToNewArrival = targetZone === 'newArrival';
         const wasLive = product.isLive;
+        const wasNewArrival = product.isNewArrival;
 
-        // Update the product's live status
+        // Update the product's status
         const updatedProducts = products.map(p => {
             if (p.id === product.id) {
-                return { ...p, isLive: isMovingToLive };
+                return {
+                    ...p,
+                    isLive: isMovingToLive,
+                    isNewArrival: isMovingToNewArrival
+                };
             }
             return p;
         });
 
         // Re-index positions within the target zone
         const targetList = updatedProducts
-            .filter(p => p.isLive === isMovingToLive)
+            .filter(p => {
+                if (targetZone === 'live') return p.isLive && !p.isNewArrival;
+                if (targetZone === 'newArrival') return p.isNewArrival;
+                return !p.isLive && !p.isNewArrival;
+            })
             .sort((a, b) => a.position - b.position);
 
         // If dropping/moving at a specific index, reorder
@@ -284,9 +299,14 @@ export default function ProductsPage() {
         }
 
         // Also re-index the source zone if item moved between zones
-        if (wasLive !== isMovingToLive) {
+        const sourceZone = wasNewArrival ? 'newArrival' : (wasLive ? 'live' : 'draft');
+        if (sourceZone !== targetZone) {
             const sourceList = updatedProducts
-                .filter(p => p.isLive === wasLive)
+                .filter(p => {
+                    if (sourceZone === 'live') return p.isLive && !p.isNewArrival;
+                    if (sourceZone === 'newArrival') return p.isNewArrival;
+                    return !p.isLive && !p.isNewArrival;
+                })
                 .sort((a, b) => a.position - b.position);
             sourceList.forEach((p, i) => p.position = i);
         }
@@ -296,8 +316,13 @@ export default function ProductsPage() {
     };
 
     const handleMoveInZone = (product: Product, direction: 'up' | 'down') => {
+        const currentZone = product.isNewArrival ? 'newArrival' : (product.isLive ? 'live' : 'draft');
         const zoneProducts = products
-            .filter(p => p.isLive === product.isLive)
+            .filter(p => {
+                if (currentZone === 'live') return p.isLive && !p.isNewArrival;
+                if (currentZone === 'newArrival') return p.isNewArrival;
+                return !p.isLive && !p.isNewArrival;
+            })
             .sort((a, b) => a.position - b.position);
 
         const currentIndex = zoneProducts.findIndex(p => p.id === product.id);
@@ -321,7 +346,12 @@ export default function ProductsPage() {
     const savePositions = async () => {
         setIsSaving(true);
         try {
-            const updates = products.map(p => ({ id: p.id, position: p.position, isLive: p.isLive }));
+            const updates = products.map(p => ({
+                id: p.id,
+                position: p.position,
+                isLive: p.isLive,
+                isNewArrival: p.isNewArrival
+            }));
             const res = await fetch('/api/products', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -506,15 +536,26 @@ export default function ProductsPage() {
 
                             {/* Actions */}
                             <div className="flex items-center justify-between pt-4 border-t">
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={formData.isLive}
-                                        onChange={e => setFormData({ ...formData, isLive: e.target.checked })}
-                                        className="w-4 h-4 text-primary rounded"
-                                    />
-                                    <span className="text-sm font-medium text-gray-700">Publish immediately</span>
-                                </label>
+                                <div className="flex flex-col gap-2">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.isLive}
+                                            onChange={e => setFormData({ ...formData, isLive: e.target.checked, isNewArrival: e.target.checked ? false : formData.isNewArrival })}
+                                            className="w-4 h-4 text-primary rounded"
+                                        />
+                                        <span className="text-sm font-medium text-gray-700">Publish immediately</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.isNewArrival}
+                                            onChange={e => setFormData({ ...formData, isNewArrival: e.target.checked, isLive: e.target.checked ? false : formData.isLive })}
+                                            className="w-4 h-4 text-purple-600 rounded"
+                                        />
+                                        <span className="text-sm font-medium text-gray-700">Set as New Arrival (Coming Soon)</span>
+                                    </label>
+                                </div>
                                 <div className="flex gap-3">
                                     <button onClick={resetForm} className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
                                         Cancel
@@ -535,7 +576,7 @@ export default function ProductsPage() {
             )}
 
             {/* Drag and Drop Board */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* LIVE Column */}
                 <div
                     onDragOver={(e) => handleDragOver(e, 'live')}
@@ -554,13 +595,12 @@ export default function ProductsPage() {
                                 {liveProducts.length}
                             </span>
                         </div>
-                        <p className="text-xs text-green-600">Visible on the storefront</p>
                     </div>
 
                     <div className="p-4 space-y-3">
                         {liveProducts.length === 0 ? (
                             <p className="py-10 text-center text-sm text-green-400 italic">
-                                Drag products here to go live
+                                Drag here to go live
                             </p>
                         ) : (
                             liveProducts.map((product, index) => (
@@ -574,6 +614,49 @@ export default function ProductsPage() {
                                     onDelete={handleDelete}
                                     onToggleLive={() => performMove(product, product.isLive ? 'draft' : 'live')}
                                     variant="live"
+                                />
+                            ))
+                        )}
+                    </div>
+                </div>
+
+                {/* NEW ARRIVALS Column */}
+                <div
+                    onDragOver={(e) => handleDragOver(e, 'newArrival')}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, 'newArrival')}
+                    className={`rounded-2xl border-2 transition-colors min-h-[300px] ${dragOverZone === 'newArrival'
+                        ? 'border-purple-400 bg-purple-50/50'
+                        : 'border-purple-200 bg-purple-50/20'
+                        }`}
+                >
+                    <div className="flex items-center justify-between px-5 py-4 border-b border-purple-100">
+                        <div className="flex items-center gap-2">
+                            <Tag className="h-5 w-5 text-purple-600" />
+                            <h3 className="text-lg font-bold text-purple-900">New Arrivals</h3>
+                            <span className="ml-1 flex h-6 w-6 items-center justify-center rounded-full bg-purple-100 text-xs font-bold text-purple-700">
+                                {newArrivalProducts.length}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="p-4 space-y-3">
+                        {newArrivalProducts.length === 0 ? (
+                            <p className="py-10 text-center text-sm text-purple-400 italic">
+                                Drag here for New Arrivals
+                            </p>
+                        ) : (
+                            newArrivalProducts.map((product, index) => (
+                                <DraggableCard
+                                    key={product.id}
+                                    product={product}
+                                    onDragStart={handleDragStart}
+                                    onDragEnd={handleDragEnd}
+                                    onDrop={(e) => handleDrop(e, 'newArrival', index)}
+                                    onEdit={handleEdit}
+                                    onDelete={handleDelete}
+                                    onToggleLive={() => performMove(product, 'newArrival')}
+                                    variant="newArrival"
                                 />
                             ))
                         )}
@@ -598,13 +681,12 @@ export default function ProductsPage() {
                                 {draftProducts.length}
                             </span>
                         </div>
-                        <p className="text-xs text-gray-400">Not visible to customers</p>
                     </div>
 
                     <div className="p-4 space-y-3">
                         {draftProducts.length === 0 ? (
                             <p className="py-10 text-center text-sm text-gray-400 italic">
-                                Drag products here to unpublish
+                                Drag here to unpublish
                             </p>
                         ) : (
                             draftProducts.map((product, index) => (
@@ -616,7 +698,7 @@ export default function ProductsPage() {
                                     onDrop={(e) => handleDrop(e, 'draft', index)}
                                     onEdit={handleEdit}
                                     onDelete={handleDelete}
-                                    onToggleLive={() => performMove(product, product.isLive ? 'draft' : 'live')}
+                                    onToggleLive={() => performMove(product, 'draft')}
                                     variant="draft"
                                 />
                             ))
@@ -695,7 +777,7 @@ function DraggableCard({
     onEdit: (product: Product) => void;
     onDelete: (id: string) => void;
     onToggleLive: () => void;
-    variant: 'live' | 'draft';
+    variant: 'live' | 'draft' | 'newArrival';
 }) {
     return (
         <div
@@ -706,7 +788,9 @@ function DraggableCard({
             onDrop={(e) => { e.stopPropagation(); onDrop(e); }}
             className={`flex items-center gap-4 rounded-xl p-3 border cursor-grab active:cursor-grabbing transition-all hover:shadow-md ${variant === 'live'
                 ? 'bg-white border-green-100'
-                : 'bg-white border-gray-100 opacity-90'
+                : variant === 'newArrival'
+                    ? 'bg-white border-purple-100'
+                    : 'bg-white border-gray-100 opacity-90'
                 }`}
         >
             {/* Grab handle - visible on desktop, hidden on mobile */}
@@ -730,11 +814,13 @@ function DraggableCard({
                     onClick={(e) => { e.stopPropagation(); onToggleLive(); }}
                     className={`p-1.5 rounded-lg transition-colors border ${variant === 'live'
                         ? 'text-green-600 border-green-100 hover:bg-green-50'
-                        : 'text-gray-400 border-gray-100 hover:bg-gray-100'
+                        : variant === 'newArrival'
+                            ? 'text-purple-600 border-purple-100 hover:bg-purple-50'
+                            : 'text-gray-400 border-gray-100 hover:bg-gray-100'
                         }`}
-                    title={variant === 'live' ? 'Move to Drafts' : 'Move to Live'}
+                    title={variant === 'live' ? 'Move to Drafts' : (variant === 'newArrival' ? 'Move to Drafts' : 'Move to Live')}
                 >
-                    {variant === 'live' ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {variant === 'live' ? <EyeOff className="h-4 w-4" /> : (variant === 'newArrival' ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />)}
                 </button>
 
                 <button

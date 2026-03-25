@@ -9,10 +9,14 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const liveOnly = searchParams.get('live') === 'true';
+    const newArrivalOnly = searchParams.get('newArrival') === 'true';
 
     let query = supabase.from('products').select('*').order('position', { ascending: true });
+
     if (liveOnly) {
-        query = query.eq('isLive', true);
+        query = query.eq('isLive', true).eq('isNewArrival', false);
+    } else if (newArrivalOnly) {
+        query = query.eq('isNewArrival', true);
     }
 
     const { data, error } = await query;
@@ -50,6 +54,7 @@ export async function POST(request: NextRequest) {
                 imageUrl: p.imageUrl,
                 description: p.description || '',
                 isLive: true,
+                isNewArrival: false,
                 position: index,
                 createdAt: new Date().toISOString(),
             }));
@@ -85,8 +90,8 @@ export async function PUT(request: NextRequest) {
 
         // Batch position update
         if (body.action === 'updatePositions' && Array.isArray(body.updates)) {
-            const promises = body.updates.map(({ id, position, isLive }: any) =>
-                supabase!.from('products').update({ position, isLive }).eq('id', id)
+            const promises = body.updates.map(({ id, position, isLive, isNewArrival }: any) =>
+                supabase!.from('products').update({ position, isLive, isNewArrival }).eq('id', id)
             );
             const results = await Promise.all(promises);
             const hasError = results.some((r: any) => r.error);
