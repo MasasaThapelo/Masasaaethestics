@@ -43,13 +43,18 @@ export default function AdminLayout({
                 return;
             }
 
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
-                router.push('/admin/login');
-            } else {
-                setIsAuthenticated(true);
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) {
+                    router.push('/admin/login');
+                } else {
+                    setIsAuthenticated(true);
+                }
+            } catch (err) {
+                console.error("Auth check failed", err);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         };
 
         checkAuth();
@@ -57,7 +62,9 @@ export default function AdminLayout({
 
 
     const handleLogout = async () => {
-        localStorage.removeItem('admin_dev_bypass');
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('admin_dev_bypass');
+        }
         if (supabase) await supabase.auth.signOut();
         router.push('/admin/login');
     };
@@ -69,90 +76,92 @@ export default function AdminLayout({
         { name: 'Settings', href: '/admin/settings', icon: Settings },
     ];
 
-    // Handle initial loading state
-    if (loading && !isLoginPage) {
-        return (
-            <div className="flex h-screen w-full items-center justify-center bg-gray-50">
-                <div className="flex flex-col items-center gap-4">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <p className="text-sm text-gray-500 animate-pulse">Loading admin...</p>
-                </div>
-            </div>
-        );
-    }
-
-    // Login page bypasses sidebars
-    if (isLoginPage) {
-        return <>{children}</>;
-    }
-
+    // SINGLE RETURN to avoid hook ordering issues (Error #310)
+    // We render the wrapper always, and conditionally render the content inside
     return (
         <div className="flex min-h-screen bg-gray-100">
-            {/* Mobile Header */}
-            <header className="fixed top-0 left-0 right-0 z-40 flex h-16 items-center justify-between border-b bg-white px-4 md:hidden">
-                <span className="text-xl font-bold text-primary">Masasa Admin</span>
-                <button
-                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                    className="rounded-md p-2 text-gray-600 hover:bg-gray-100"
-                >
-                    {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-                </button>
-            </header>
+            {isLoginPage ? (
+                <div className="w-full h-full">{children}</div>
+            ) : (
+                <>
+                    {/* Mobile Header */}
+                    <header className="fixed top-0 left-0 right-0 z-40 flex h-16 items-center justify-between border-b bg-white px-4 md:hidden">
+                        <span className="text-xl font-bold text-primary">Masasa Admin</span>
+                        <button
+                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                            className="rounded-md p-2 text-gray-600 hover:bg-gray-100"
+                        >
+                            {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                        </button>
+                    </header>
 
-            {/* Sidebar Overlay */}
-            {isMobileMenuOpen && (
-                <div
-                    className="fixed inset-0 z-40 bg-black/50 md:hidden"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                />
-            )}
+                    {/* Sidebar Overlay */}
+                    {isMobileMenuOpen && (
+                        <div
+                            className="fixed inset-0 z-40 bg-black/50 md:hidden"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                        />
+                    )}
 
-            {/* Sidebar */}
-            <aside className={cn(
-                "fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transition-transform md:translate-x-0 flex flex-col",
-                isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-            )}>
-                <div className="flex h-16 items-center justify-center border-b px-6">
-                    <span className="text-xl font-bold text-primary">Masasa Admin</span>
-                </div>
+                    {/* Sidebar */}
+                    <aside className={cn(
+                        "fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transition-transform md:translate-x-0 flex flex-col",
+                        isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+                    )}>
+                        <div className="flex h-16 items-center justify-center border-b px-6">
+                            <span className="text-xl font-bold text-primary">Masasa Admin</span>
+                        </div>
 
-                <nav className="flex-1 space-y-1 px-4 py-8">
-                    {navItems.map((item) => {
-                        const isActive = pathname === item.href;
-                        return (
-                            <Link
-                                key={item.name}
-                                href={item.href}
-                                onClick={() => setIsMobileMenuOpen(false)}
-                                className={cn(
-                                    "flex items-center gap-3 rounded-md px-4 py-3 text-sm font-medium transition-colors",
-                                    isActive
-                                        ? "bg-primary text-primary-foreground"
-                                        : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                                )}
+                        <nav className="flex-1 space-y-1 px-4 py-8">
+                            {navItems.map((item) => {
+                                const isActive = pathname === item.href;
+                                return (
+                                    <Link
+                                        key={item.name}
+                                        href={item.href}
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                        className={cn(
+                                            "flex items-center gap-3 rounded-md px-4 py-3 text-sm font-medium transition-colors",
+                                            isActive
+                                                ? "bg-primary text-primary-foreground"
+                                                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                                        )}
+                                    >
+                                        <item.icon className="h-5 w-5" />
+                                        {item.name}
+                                    </Link>
+                                );
+                            })}
+                        </nav>
+
+                        <div className="border-t p-4">
+                            <button
+                                onClick={handleLogout}
+                                className="flex w-full items-center gap-3 rounded-md px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
                             >
-                                <item.icon className="h-5 w-5" />
-                                {item.name}
-                            </Link>
-                        );
-                    })}
-                </nav>
+                                <LogOut className="h-5 w-5" />
+                                Logout
+                            </button>
+                        </div>
+                    </aside>
 
-                <div className="border-t p-4">
-                    <button
-                        onClick={handleLogout}
-                        className="flex w-full items-center gap-3 rounded-md px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
-                    >
-                        <LogOut className="h-5 w-5" />
-                        Logout
-                    </button>
-                </div>
-            </aside>
-
-            {/* Main Content */}
-            <main className="flex-1 md:ml-64 p-4 md:p-8 pt-20 md:pt-8">
-                {children}
-            </main>
+                    {/* Main Content */}
+                    <main className="flex-1 md:ml-64 p-4 md:p-8 pt-20 md:pt-8 min-h-screen">
+                        {loading ? (
+                            <div className="flex h-[60vh] w-full items-center justify-center">
+                                <div className="flex flex-col items-center gap-4">
+                                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                    <p className="text-sm text-gray-500 animate-pulse">Loading admin...</p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="animate-in fade-in duration-500">
+                                {children}
+                            </div>
+                        )}
+                    </main>
+                </>
+            )}
         </div>
     );
 }
