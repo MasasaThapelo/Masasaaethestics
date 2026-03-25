@@ -138,7 +138,7 @@ export default function ProductsPage() {
               <div className="flex items-center justify-between border-b border-border pb-4">
                 <div className="flex items-center gap-3">
                   <h2 className="text-2xl font-bold tracking-tight text-foreground">New Arrivals</h2>
-                  <span className="bg-purple-100 text-purple-600 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                  <span className="hidden md:flex bg-purple-100 text-purple-600 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
                     Coming Soon
                   </span>
                 </div>
