@@ -4,58 +4,95 @@ import { useState } from 'react';
 import Header from '@/components/Header';
 import ProductCard from '@/components/ProductCard';
 import { products, ProductCategory, getProductsByCategory } from '@/data/products';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/Button';
 
 const categories: ProductCategory[] = ['Botanical Blossom', 'White Heaven', 'Strawberry Shortcake'];
 
 export default function ProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | 'All'>('All');
 
-  const displayedProducts = selectedCategory === 'All' 
-    ? products 
+  const displayedProducts = selectedCategory === 'All'
+    ? products
     : getProductsByCategory(selectedCategory);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <Header />
-      
-      <div className="container mx-auto px-4 py-12">
-        <h1 className="text-4xl font-bold text-gray-900 mb-8 text-center">Our Products</h1>
-        
+
+      {/* Page Header */}
+      <div className="bg-secondary/30 pt-32 pb-12 md:pb-24">
+        <div className="container mx-auto px-4 text-center space-y-4">
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-4xl md:text-5xl font-bold tracking-tight text-foreground"
+          >
+            Collection
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-muted-foreground max-w-xl mx-auto text-lg"
+          >
+            Explore our curated selection of premium cases, designed to protect and impress.
+          </motion.p>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-12 space-y-12">
         {/* Category Filters */}
-        <div className="flex flex-wrap justify-center gap-4 mb-12">
-          <button
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="flex flex-wrap justify-center gap-3"
+        >
+          <Button
+            variant={selectedCategory === 'All' ? 'default' : 'outline'}
             onClick={() => setSelectedCategory('All')}
-            className={`px-6 py-2 rounded-full transition-colors ${
-              selectedCategory === 'All'
-                ? 'bg-gold text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-100'
-            }`}
+            className={cn(
+              "rounded-full px-6",
+              selectedCategory === 'All' ? "" : "bg-transparent border-gray-300 hover:bg-gray-100"
+            )}
           >
             All Products
-          </button>
+          </Button>
           {categories.map((category) => (
-            <button
+            <Button
               key={category}
+              variant={selectedCategory === category ? 'default' : 'outline'}
               onClick={() => setSelectedCategory(category)}
-              className={`px-6 py-2 rounded-full transition-colors ${
-                selectedCategory === category
-                  ? 'bg-gold text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
-              }`}
+              className={cn(
+                "rounded-full px-6",
+                selectedCategory === category ? "" : "bg-transparent border-gray-300 hover:bg-gray-100"
+              )}
             >
               {category}
-            </button>
+            </Button>
           ))}
-        </div>
+        </motion.div>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {displayedProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        <motion.div
+          layout
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
+        >
+          <AnimatePresence mode='popLayout'>
+            {displayedProducts.map((product, index) => (
+              <ProductCard key={product.id} product={product} index={index} />
+            ))}
+          </AnimatePresence>
+        </motion.div>
+
+        {displayedProducts.length === 0 && (
+          <div className="text-center py-20 text-muted-foreground">
+            No products found in this category.
+          </div>
+        )}
       </div>
     </div>
   );
 }
-

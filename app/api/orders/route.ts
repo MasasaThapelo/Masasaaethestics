@@ -3,10 +3,7 @@ import { sendWhatsAppMessage, formatOrderMessage, formatBusinessNotification } f
 import { sendOrderConfirmationEmail } from '@/lib/email';
 import { Order, CreateOrderRequest } from '@/lib/types';
 import { config } from '@/lib/config';
-
-// In production, you would use a database
-// For now, we'll store orders in memory (this will be lost on server restart)
-const orders: Order[] = [];
+import { supabase } from '@/lib/supabase';
 
 // Health check endpoint
 export async function OPTIONS() {
@@ -29,7 +26,7 @@ function generateOrderId(): string {
 export async function POST(request: NextRequest) {
   try {
     const orderData = await request.json();
-    
+
     // Validate required fields
     if (!orderData.name || !orderData.email || !orderData.phone || !orderData.items || orderData.items.length === 0) {
       return NextResponse.json(
@@ -40,7 +37,7 @@ export async function POST(request: NextRequest) {
 
     // Generate order ID
     const orderId = generateOrderId();
-    
+
     // Create order object
     const order = {
       orderId,
@@ -49,8 +46,20 @@ export async function POST(request: NextRequest) {
       status: 'pending',
     };
 
-    // Store order (in production, save to database)
-    orders.push(order);
+    // Store order in Supabase
+    if (supabase) {
+      const { error } = await supabase
+        .from('orders')
+        .insert([order]);
+
+      if (error) {
+        console.error('Supabase error inserting order:', error);
+        // We still continue as the in-memory storage fallback is gone, 
+        // but we'll return an error if the database write fails in production.
+        // For now, let's treat it as a hard failure for data integrity.
+        throw new Error('Failed to save order to database');
+      }
+    }
 
     // Send confirmations (don't fail the order if these fail)
     try {
@@ -92,8 +101,8 @@ export async function POST(request: NextRequest) {
     console.error('Error creating order:', error);
     const errorMessage = error instanceof Error ? error.message : 'Failed to create order';
     return NextResponse.json(
-      { error: errorMessage, details: error instanceof Error ? error.stack : undefined },
-      { 
+      { error: errorMessage },
+      {
         status: 500,
         headers: {
           'Access-Control-Allow-Origin': '*',
@@ -115,9 +124,20 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const order = orders.find(o => o.orderId === orderId);
+  if (!supabase) {
+    return NextResponse.json(
+      { error: 'Database not configured' },
+      { status: 500 }
+    );
+  }
 
-  if (!order) {
+  const { data: order, error } = await supabase
+    .from('orders')
+    .select('*')
+    .eq('orderId', orderId)
+    .single();
+
+  if (error || !order) {
     return NextResponse.json(
       { error: 'Order not found' },
       { status: 404 }

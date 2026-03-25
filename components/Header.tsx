@@ -1,134 +1,181 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from './CartContext';
+import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion';
+import { ShoppingBag, Menu, X, Search, Lock } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from './ui/Button';
+import CartDrawer from './CartDrawer';
 
 export default function Header() {
   const { getItemCount } = useCart();
   const itemCount = getItemCount();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const { scrollY } = useScroll();
+
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    const previous = scrollY.getPrevious() ?? 0;
+    if (latest > previous && latest > 150) {
+      setHidden(true);
+    } else {
+      setHidden(false);
+    }
+  });
 
   return (
-    <header className="bg-white shadow-md sticky top-0 z-50">
-      <nav className="container mx-auto px-4 py-3 md:py-4">
-        {/* Mobile Header - Centered Logo */}
-        <div className="flex md:hidden items-center justify-between">
-          {/* Hamburger menu button - left */}
-          <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="text-gray-700 hover:text-gold transition-colors p-1"
-            aria-label="Toggle menu"
-          >
-            {isMobileMenuOpen ? (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            ) : (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            )}
-          </button>
+    <>
+      <motion.header
+        variants={{
+          visible: { y: 0 },
+          hidden: { y: "-100%" },
+        }}
+        animate={hidden ? "hidden" : "visible"}
+        transition={{ duration: 0.35, ease: "easeInOut" }}
+        className="fixed top-0 inset-x-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50 supports-[backdrop-filter]:bg-background/60"
+      >
+        <nav className="container mx-auto px-4 h-16 flex items-center justify-between">
 
-          {/* Centered Logo */}
-          <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
-            <Image
-              src="/images/Masasa-logo.png"
-              alt="Masasa Aesthetics Logo"
-              width={100}
-              height={100}
-              className="object-contain drop-shadow-lg"
-              style={{ filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.2))' }}
-            />
-          </Link>
+          {/* Mobile Menu Trigger */}
+          <div className="md:hidden">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsMobileMenuOpen(true)}
+              aria-label="Open menu"
+            >
+              <Menu className="h-6 w-6" />
+            </Button>
+          </div>
 
-          {/* Cart icon - right */}
-          <Link href="/cart" className="text-gray-700 hover:text-gold transition-colors relative">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            {itemCount > 0 && (
-              <span className="absolute -top-2 -right-2 bg-gold text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
-                {itemCount}
-              </span>
-            )}
-          </Link>
-        </div>
-
-        {/* Desktop Header */}
-        <div className="hidden md:flex justify-between items-center">
-          {/* Logo */}
-          <Link href="/" className="flex items-center hover:opacity-80 transition-opacity z-10">
-            <Image
-              src="/images/Masasa-logo.png"
-              alt="Masasa Aesthetics Logo"
-              width={80}
-              height={80}
-              className="object-contain drop-shadow-lg"
-              style={{ filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.2))' }}
-            />
-          </Link>
-
-          {/* Brand name - centered on desktop */}
-          <Link href="/" className="absolute left-1/2 transform -translate-x-1/2 hover:opacity-90 transition-opacity">
-            <span className="text-2xl lg:text-4xl font-extrabold text-gold tracking-wide drop-shadow-md">
+          {/* Logo (Centered on mobile, Left on Desktop) */}
+          <Link href="/" className="flex items-center gap-2 group md:absolute md:left-1/2 md:transform md:-translate-x-1/2">
+            <div className="relative w-8 h-8 md:w-10 md:h-10 transition-transform group-hover:scale-105">
+              <Image
+                src="/images/Masasa-logo.png"
+                alt="Masasa Aesthetics"
+                fill
+                className="object-contain"
+              />
+            </div>
+            <span className="hidden md:block font-bold text-xl tracking-tight text-foreground group-hover:text-primary transition-colors">
               Masasa Aesthetics
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="flex gap-6 items-center">
-            <Link href="/products" className="text-gray-700 hover:text-gold transition-colors font-medium">
-              Products
+          {/* Desktop Navigation (Left Side) */}
+          <div className="hidden md:flex items-center space-x-8">
+            {/* Left intentionally empty or can add links here if logo moves to center */}
+            <Link href="/products" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              Shop All
             </Link>
-            <Link href="/cart" className="text-gray-700 hover:text-gold transition-colors relative font-medium">
-              Cart
-              {itemCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-gold text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
-                  {itemCount}
-                </span>
-              )}
+            <Link href="/products?category=new" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              New Arrivals
             </Link>
           </div>
-        </div>
 
-        {/* Mobile Menu Dropdown */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden mt-4 pb-4 border-t border-gray-100 pt-4">
-            <div className="flex flex-col space-y-4">
-              <Link 
-                href="/" 
-                className="text-gold font-bold text-xl"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Masasa Aesthetics
-              </Link>
-              <Link 
-                href="/products" 
-                className="text-gray-700 hover:text-gold transition-colors font-medium py-2"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Products
-              </Link>
-              <Link 
-                href="/cart" 
-                className="text-gray-700 hover:text-gold transition-colors font-medium py-2 flex items-center gap-2"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Cart
-                {itemCount > 0 && (
-                  <span className="bg-gold text-white text-xs rounded-full px-2 py-0.5 font-semibold">
-                    {itemCount} items
-                  </span>
-                )}
-              </Link>
-            </div>
+          {/* Right Side Icons */}
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="hidden md:flex" aria-label="Search">
+              <Search className="h-5 w-5 text-muted-foreground" />
+            </Button>
+
+            <Link href="/admin/dashboard">
+              <Button variant="ghost" size="icon" aria-label="Admin Access">
+                <Lock className="h-5 w-5 text-muted-foreground hover:text-primary transition-colors" />
+              </Button>
+            </Link>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative"
+              aria-label="Cart"
+              onClick={() => setIsCartOpen(true)}
+            >
+              <ShoppingBag className="h-5 w-5 text-muted-foreground" />
+              {itemCount > 0 && (
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary"
+                />
+              )}
+            </Button>
           </div>
+        </nav>
+      </motion.header>
+
+      {/* Cart Drawer */}
+      <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+
+      {/* Mobile Menu Overlay */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm md:hidden"
+            />
+            <motion.div
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed top-0 bottom-0 left-0 z-50 w-3/4 max-w-sm bg-background border-r border-border p-6 shadow-xl md:hidden"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <span className="font-bold text-lg">Menu</span>
+                <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(false)}>
+                  <X className="h-6 w-6" />
+                </Button>
+              </div>
+
+              <div className="flex flex-col space-y-4">
+                <Link
+                  href="/"
+                  className="text-lg font-medium hover:text-primary transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Home
+                </Link>
+                <Link
+                  href="/products"
+                  className="text-lg font-medium hover:text-primary transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Shop Products
+                </Link>
+                <button
+                  className="text-lg font-medium hover:text-primary transition-colors text-left"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    setIsCartOpen(true);
+                  }}
+                >
+                  Cart ({itemCount})
+                </button>
+                <Link
+                  href="/admin/dashboard"
+                  className="text-lg font-medium hover:text-primary transition-colors flex items-center gap-2 mt-4 pt-4 border-t border-border"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <Lock className="h-4 w-4" />
+                  Admin Access
+                </Link>
+              </div>
+            </motion.div>
+          </>
         )}
-      </nav>
-    </header>
+      </AnimatePresence>
+    </>
   );
 }
 
