@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Lock } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 
 export default function AdminLogin() {
     const [email, setEmail] = useState('');
@@ -17,31 +16,27 @@ export default function AdminLogin() {
         e.preventDefault();
         setIsLoading(true);
 
-        if (!supabase) {
-            alert('Supabase is not configured yet. Please check environment variables.');
-            setIsLoading(false);
-            return;
-        }
-
         try {
-            const { error } = await supabase.auth.signInWithPassword({
-                email,
-                password,
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
             });
 
-            if (error) throw error;
+            const data = await res.json();
 
-            router.push('/admin/dashboard');
+            if (data.success && data.token) {
+                // Store the custom session token
+                localStorage.setItem('admin_session', data.token);
+                router.push('/admin/dashboard');
+            } else {
+                alert(data.message || 'Invalid credentials');
+            }
         } catch (error: any) {
-            alert(error.message || 'Failed to login');
+            alert('Failed to login. Please try again.');
         } finally {
             setIsLoading(false);
         }
-    };
-
-    const handleDevBypass = () => {
-        localStorage.setItem('admin_dev_bypass', 'true');
-        router.push('/admin/dashboard');
     };
 
     return (
@@ -55,7 +50,7 @@ export default function AdminLogin() {
                         Admin Access
                     </h2>
                     <p className="mt-2 text-center text-sm text-gray-600">
-                        Sign in to manage your store
+                        Sign in with your predefined credentials
                     </p>
                 </div>
 
@@ -81,32 +76,12 @@ export default function AdminLogin() {
                         </div>
                     </div>
 
-                    <div>
-                        <Button
-                            type="submit"
-                            className="w-full"
-                            isLoading={isLoading}
-                        >
-                            Sign in
-                        </Button>
-                    </div>
-
-                    <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t border-gray-300" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-white px-2 text-gray-500">Development Only</span>
-                        </div>
-                    </div>
-
                     <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full border-dashed border-primary/50 text-primary hover:bg-primary/5"
-                        onClick={handleDevBypass}
+                        type="submit"
+                        className="w-full"
+                        isLoading={isLoading}
                     >
-                        Bypass Login (Dev Mode)
+                        Sign in
                     </Button>
                 </form>
             </div>
