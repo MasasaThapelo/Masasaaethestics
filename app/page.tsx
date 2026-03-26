@@ -6,6 +6,16 @@ import ProductCard from '@/components/ProductCard';
 import { products as staticProducts, getUniquePhoneModels as getStaticModels, Product } from '@/data/products';
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+const PhoneCase3D = dynamic(() => import('@/components/PhoneCase3D'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[500px] flex items-center justify-center">
+      <div className="w-32 h-56 rounded-3xl bg-gradient-to-br from-gray-200/10 to-gray-300/10 animate-pulse" />
+    </div>
+  ),
+});
 
 export default function Home() {
   const [products, setProducts] = useState<Product[]>(staticProducts);
@@ -39,20 +49,24 @@ export default function Home() {
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-24 space-y-32">
-        {/* Intro Text */}
+        {/* 3D Phone Case Showcase */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true, margin: "-100px" }}
-          className="text-center max-w-3xl mx-auto space-y-6"
+          className="relative"
         >
-          <span className="text-sm font-semibold uppercase tracking-widest text-primary/80">Philosophy</span>
-          <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-foreground">Art in your pocket.</h2>
-          <p className="text-lg text-muted-foreground leading-relaxed">
-            We believe your phone case should be an extension of your style.
-            Each design is curated to bring elegance and personality to your daily device.
-          </p>
+          <div className="text-center space-y-4 mb-8">
+            <h2 className="text-3xl md:text-5xl font-bold tracking-tight text-foreground">Art in your pocket.</h2>
+            <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
+              We believe your phone case should be an extension of your style.
+              Each design is curated to bring elegance and personality to your daily device.
+            </p>
+          </div>
+          <div className="w-full h-[700px] md:h-[600px] relative mt-12 md:mt-0 pointer-events-auto flex items-center justify-center">
+            <PhoneCase3D />
+          </div>
         </motion.section>
 
         {/* Phone Model Sections */}

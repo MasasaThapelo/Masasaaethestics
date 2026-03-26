@@ -1,7 +1,6 @@
 'use client';
 
 import { motion, useScroll, useTransform } from 'framer-motion';
-import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from './ui/Button';
 import { useRef } from 'react';
@@ -24,9 +23,6 @@ export default function Hero() {
                 className="absolute inset-0 z-0"
             >
                 <div className="relative h-full w-full bg-gradient-to-b from-black/60 to-black/30">
-                    {/* Placeholder for a high-quality Hero Image. 
-                 Ideally this should be a lifestyle shot of the phone cases.
-                 Using a gradient/pattern for now if no specific image exists. */}
                     <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-gray-800 via-gray-950 to-black" />
 
                     {/* Abstract animated shapes */}
@@ -84,11 +80,6 @@ export default function Hero() {
                     <Link href="/products">
                         <Button size="lg" className="rounded-full bg-white text-black hover:bg-gray-200 px-8 py-6 text-lg">
                             Shop Collection
-                        </Button>
-                    </Link>
-                    <Link href="/products?category=new">
-                        <Button variant="outline" size="lg" className="rounded-full border-white/20 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20 px-8 py-6 text-lg">
-                            View Lookbook
                         </Button>
                     </Link>
                 </motion.div>

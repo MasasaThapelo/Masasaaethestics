@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Header from '@/components/Header';
 import ProductCard from '@/components/ProductCard';
-import { products as staticProducts, ProductCategory, Product } from '@/data/products';
+import { ProductCategory, Product } from '@/data/products';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
@@ -46,9 +46,7 @@ export default function ProductsPage() {
 
   const categories = staticCategories;
 
-  const displayedStaticProducts = selectedCategory === 'All'
-    ? staticProducts
-    : staticProducts.filter(p => p.category === selectedCategory);
+
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
