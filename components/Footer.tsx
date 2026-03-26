@@ -46,7 +46,7 @@ export default function Footer() {
             <div className="flex gap-4">
               {/* Facebook */}
               <a
-                href="https://facebook.com"
+                href="https://www.facebook.com/thembi.masasa.3538"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-300 hover:text-gold transition-colors"
@@ -59,7 +59,7 @@ export default function Footer() {
 
               {/* Instagram */}
               <a
-                href="https://instagram.com"
+                href="https://www.instagram.com/masasa_aesthetics/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-gray-300 hover:text-gold transition-colors"

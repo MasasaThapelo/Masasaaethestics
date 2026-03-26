@@ -75,15 +75,40 @@ function PhoneCaseMesh() {
     return () => window.removeEventListener('mousemove', handleMouse);
   }, [isMobile]);
 
+  // Scroll tracking
+  const scrollOffset = useRef<number>(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      scrollOffset.current = window.scrollY;
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    // Initialize
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   // Animation frame
   useFrame((state, delta) => {
     if (!meshRef.current) return;
 
     const input = isMobile ? gyro : mousePos;
 
-    // Smooth tilt toward input
-    const targetRotX = input.y * 0.3;
-    const targetRotY = input.x * 0.4;
+    // Base interactive tilt
+    let targetRotX = input.y * 0.3;
+    let targetRotY = input.x * 0.4;
+
+    // Add scroll-based tilt (tilts back as you scroll past it)
+    // The case is located after the Hero (which is ~90vh).
+    // We start applying dramatic tilt after ~400px of scrolling.
+    const scrollAmount = Math.max(0, scrollOffset.current - 200);
+    const scrollFactor = Math.min(scrollAmount / 800, 1); // Normalize 0 to 1 over 800px of scroll
+    
+    // Tilt backwards up to ~45 degrees (0.8 radians) instead of 85
+    targetRotX -= scrollFactor * 0.8;
+    // Add a very slight twist
+    targetRotY -= scrollFactor * 0.15;
+
     meshRef.current.rotation.x = THREE.MathUtils.lerp(meshRef.current.rotation.x, targetRotX, 0.05);
     meshRef.current.rotation.y = THREE.MathUtils.lerp(meshRef.current.rotation.y, targetRotY, 0.05);
 
